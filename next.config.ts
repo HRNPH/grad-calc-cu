@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  basePath: '/grad-calc-cu/',
+  assetPrefix: '/grad-calc-cu/',
 };
 
 export default nextConfig;
