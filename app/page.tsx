@@ -1,101 +1,199 @@
-import Image from "next/image";
+"use client";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { gradeScale } from "@/lib/const/grade";
+import { subjectList } from "@/lib/const/subject";
+import { Trash2, Edit, Check } from "lucide-react";
 
-export default function Home() {
+type Subject = {
+  name: string;
+  grade: keyof typeof gradeScale;
+  credits: number;
+};
+
+export default function GradeCalculator() {
+  const [terms, setTerms] = useState<
+    {
+      name: string;
+      subjects: Subject[];
+      isEditing: boolean;
+    }[]
+  >([]);
+  const [newTerm, setNewTerm] = useState("");
+
+  useEffect(() => {
+    const savedTerms = localStorage.getItem("gradeCalculatorTerms");
+    if (savedTerms) {
+      setTerms(JSON.parse(savedTerms));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("gradeCalculatorTerms", JSON.stringify(terms));
+  }, [terms]);
+
+  const addTerm = () => {
+    if (newTerm.trim() === "") return;
+    setTerms([...terms, { name: newTerm, subjects: [], isEditing: false }]);
+    setNewTerm("");
+  };
+
+  const deleteTerm = (termIndex: number) => {
+    const updatedTerms = terms.filter((_, index) => index !== termIndex);
+    setTerms(updatedTerms);
+  };
+
+  const toggleEditTerm = (termIndex: number) => {
+    setTerms((prevTerms) =>
+      prevTerms.map((term, index) =>
+        index === termIndex ? { ...term, isEditing: !term.isEditing } : term
+      )
+    );
+  };
+
+  const renameTerm = (termIndex: number, newName: string) => {
+    setTerms((prevTerms) => {
+      const updatedTerms = [...prevTerms];
+      updatedTerms[termIndex].name = newName;
+      return updatedTerms;
+    });
+  };
+
+  const addSubject = (termIndex: number) => {
+    const newSubjects = [...terms];
+    newSubjects[termIndex].subjects.push({ name: "", grade: "A", credits: 3 });
+    setTerms(newSubjects);
+  };
+
+  const updateSubject = (
+    termIndex: number,
+    subjectIndex: number,
+    field: keyof Subject,
+    value: string
+  ) => {
+    const newTerms = [...terms];
+    (newTerms[termIndex].subjects[subjectIndex][field] as string | number) =
+      field === "credits" ? parseFloat(value) : value;
+    setTerms(newTerms);
+  };
+
+  const calculateGPA = () => {
+    let totalPoints = 0;
+    let totalCredits = 0;
+    terms.forEach((term) => {
+      term.subjects.forEach((subject) => {
+        if (gradeScale[subject.grade] !== null) {
+          totalPoints += (gradeScale[subject.grade] ?? 0) * subject.credits;
+          totalCredits += subject.credits;
+        }
+      });
+    });
+    return totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : "0.00";
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-xl font-bold mb-4">Grade Calculator</h1>
+      <div className="flex gap-2 mb-4">
+        <Input
+          placeholder="Enter Term Name"
+          value={newTerm}
+          onChange={(e) => setNewTerm(e.target.value)}
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <Button onClick={addTerm}>Add Term</Button>
+      </div>
+      {terms.map((term, termIndex) => (
+        <Card key={termIndex} className="mb-4 p-4">
+          <div className="flex justify-between items-center">
+            {term.isEditing ? (
+              <Input
+                value={term.name}
+                onChange={(e) => renameTerm(termIndex, e.target.value)}
+              />
+            ) : (
+              <h2 className="text-lg font-bold">{term.name}</h2>
+            )}
+            <div className="flex gap-2">
+              <Button onClick={() => toggleEditTerm(termIndex)} variant="ghost">
+                {term.isEditing ? (
+                  <Check className="w-5 h-5" />
+                ) : (
+                  <Edit className="w-5 h-5" />
+                )}
+              </Button>
+              <Button onClick={() => deleteTerm(termIndex)} variant="ghost">
+                <Trash2 className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 mt-2">
+            {term.subjects.map((subject, subjectIndex) => (
+              <div key={subjectIndex} className="flex gap-2">
+                <Input
+                  list="subjects"
+                  placeholder="Subject Name"
+                  value={subject.name}
+                  onChange={(e) =>
+                    updateSubject(
+                      termIndex,
+                      subjectIndex,
+                      "name",
+                      e.target.value
+                    )
+                  }
+                />
+                <datalist id="subjects">
+                  {subjectList.map((subject) => (
+                    <option key={subject} value={subject} />
+                  ))}
+                </datalist>
+                <Input
+                  type="number"
+                  placeholder="Credits"
+                  value={subject.credits}
+                  onChange={(e) =>
+                    updateSubject(
+                      termIndex,
+                      subjectIndex,
+                      "credits",
+                      e.target.value
+                    )
+                  }
+                />
+                <Select
+                  value={subject.grade}
+                  onValueChange={(value) =>
+                    updateSubject(termIndex, subjectIndex, "grade", value)
+                  }
+                >
+                  <SelectTrigger className="w-[120px]">
+                    {subject.grade}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(gradeScale).map((grade) => (
+                      <SelectItem key={grade} value={grade}>
+                        {grade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+            <div className="flex justify-end mt-2">
+              <Button onClick={() => addSubject(termIndex)}>Add Subject</Button>
+            </div>
+          </div>
+        </Card>
+      ))}
+      <h2 className="text-lg font-bold mt-4">Current GPA: {calculateGPA()}</h2>
     </div>
   );
 }
